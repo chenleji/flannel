@@ -1,11 +1,11 @@
 .PHONY: test e2e-test cover gofmt gofmt-fix header-check clean tar.gz docker-push release docker-push-all flannel-git
 
 # Registry used for publishing images
-REGISTRY?=quay.io/coreos/flannel
+REGISTRY?=registry.yonghui.cn/ycloud/flannel
 QEMU_VERSION=v3.0.0
 
 # Default tag and architecture. Can be overridden
-TAG?=$(shell git describe --tags --dirty)
+TAG?=v0.1
 ARCH?=amd64
 # Only enable CGO (and build the UDP backend) on AMD64
 ifeq ($(ARCH),amd64)
