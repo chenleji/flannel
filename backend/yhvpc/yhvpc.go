@@ -30,14 +30,14 @@ import (
 	"github.com/coreos/flannel/subnet"
 )
 
-func init() {
-	backend.Register(BackendType, New)
-}
-
 const (
 	BackendType = "yh-vpc"
 	brName      = "cni0"
 )
+
+func init() {
+	backend.Register(BackendType, New)
+}
 
 type YhVpcBackend struct {
 	subnetMgr subnet.Manager
