@@ -88,8 +88,8 @@ func (be *YhVpcBackend) RegisterNetwork(ctx context.Context, wg sync.WaitGroup, 
 	}
 
 	brIpNet := ip.IP4Net{
-		IP: lease.Subnet.IP,
-		PrefixLen: 32,
+		IP: lease.Subnet.IP + 1,
+		PrefixLen: lease.Subnet.PrefixLen,
 	}
 	if _, err = setBridgeIP(br, &brIpNet); err != nil {
 		return nil, fmt.Errorf("failed to set ip %v on bridge %v", lease.Subnet.IP.String(), brName)

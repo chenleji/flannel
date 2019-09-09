@@ -111,7 +111,7 @@ data:
           "type": "flannel",
           "delegate": {
             "hairpinMode": false,
-            "isDefaultGateway": false
+            "isDefaultGateway": true
           }
         },
         {
@@ -175,8 +175,9 @@ spec:
           command:
             - /opt/bin/flanneld
           args:
-            - --ip-masq
             - --kube-subnet-mgr
+#            - --iptables-forward-rules=false
+            - --iface=eth0.100
           resources:
             requests:
               cpu: "100m"
