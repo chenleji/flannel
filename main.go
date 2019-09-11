@@ -535,6 +535,7 @@ func LookupExtIface(ifname string, ifregex string) (*backend.ExternalInterface, 
 					return nil, fmt.Errorf("failed to get default interface: %s", err)
 				}
 			}
+			ifaceAddr = net.ParseIP("0.0.0.0")
 		} else {
 			// get default gw interface
 			log.Info("Determining IP address of default interface")

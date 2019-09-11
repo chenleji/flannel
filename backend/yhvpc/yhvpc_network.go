@@ -73,7 +73,8 @@ func (nw *network) MTU() int {
 }
 
 type phyIfLeaseAttrs struct {
-	MAC hardwareAddr `json:"extIfaceMAC"`
+	IfName string       `json:"extIface"`
+	MAC    hardwareAddr `json:"extIfaceMAC"`
 }
 
 func (nw *network) handleSubnetEvents(batch []subnet.Event) {

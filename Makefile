@@ -45,11 +45,22 @@ dist/flanneld.exe: $(shell find . -type f  -name '*.go')
 	  -ldflags '-s -w -X github.com/coreos/flannel/version.Version=$(TAG) -extldflags "-static"'
 
 # This will build flannel natively using golang image
-dist/flanneld-$(ARCH): dist/qemu-$(ARCH)-static
+#dist/flanneld-$(ARCH): dist/qemu-$(ARCH)-static
+	# valid values for ARCH are [amd64 arm arm64 ppc64le s390x]
+#	docker run -e CGO_ENABLED=$(CGO_ENABLED) -e GOARCH=$(ARCH) \
+#		-u $(shell id -u):$(shell id -g) \
+#		-v $(CURDIR)/dist/qemu-$(ARCH)-static:/usr/bin/qemu-$(ARCH)-static \
+#		-v $(CURDIR):/go/src/github.com/coreos/flannel:ro \
+#		-v $(CURDIR)/dist:/go/src/github.com/coreos/flannel/dist \
+#		golang:$(GO_VERSION) /bin/bash -c '\
+#		cd /go/src/github.com/coreos/flannel && \
+#		make -e dist/flanneld && \
+#		mv dist/flanneld dist/flanneld-$(ARCH)'
+
+dist/flanneld-$(ARCH):
 	# valid values for ARCH are [amd64 arm arm64 ppc64le s390x]
 	docker run -e CGO_ENABLED=$(CGO_ENABLED) -e GOARCH=$(ARCH) \
 		-u $(shell id -u):$(shell id -g) \
-		-v $(CURDIR)/dist/qemu-$(ARCH)-static:/usr/bin/qemu-$(ARCH)-static \
 		-v $(CURDIR):/go/src/github.com/coreos/flannel:ro \
 		-v $(CURDIR)/dist:/go/src/github.com/coreos/flannel/dist \
 		golang:$(GO_VERSION) /bin/bash -c '\
@@ -57,9 +68,12 @@ dist/flanneld-$(ARCH): dist/qemu-$(ARCH)-static
 		make -e dist/flanneld && \
 		mv dist/flanneld dist/flanneld-$(ARCH)'
 
+dist/yonghui:
+	cp -rf $(GOPATH)/src/github.com/containernetworking/plugins/bin/yonghui dist/
+
 ## Create a docker image on disk for a specific arch and tag
 image:	dist/flanneld-$(TAG)-$(ARCH).docker
-dist/flanneld-$(TAG)-$(ARCH).docker: dist/flanneld-$(ARCH)
+dist/flanneld-$(TAG)-$(ARCH).docker: dist/flanneld-$(ARCH) dist/yonghui
 	docker build -f Dockerfile.$(ARCH) -t $(REGISTRY):$(TAG)-$(ARCH) .
 	docker save -o dist/flanneld-$(TAG)-$(ARCH).docker $(REGISTRY):$(TAG)-$(ARCH)
 
