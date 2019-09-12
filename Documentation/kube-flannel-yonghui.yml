@@ -158,7 +158,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
         - name: install-cni
-          image: registry.yonghui.cn/ycloud/flannel:v0.1
+          image: registry.yonghui.cn/ycloud/flannel:v0.2
           command:
             - bash
           args:
@@ -173,7 +173,7 @@ spec:
               mountPath: /etc/kube-flannel/
       containers:
         - name: kube-flannel
-          image: registry.yonghui.cn/ycloud/flannel:v0.1
+          image: registry.yonghui.cn/ycloud/flannel:v0.2
           command:
             - /opt/bin/flanneld
           args:

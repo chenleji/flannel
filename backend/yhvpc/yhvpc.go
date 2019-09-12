@@ -30,8 +30,8 @@ import (
 )
 
 const (
-	BackendType = "yh-vpc"
-	brName      = "cni0"
+	BackendType       = "yh-vpc"
+	defaultBridgeName = "cni0"
 )
 
 func init() {
@@ -42,12 +42,6 @@ type YhVpcBackend struct {
 	subnetMgr subnet.Manager
 	extIface  *backend.ExternalInterface
 }
-
-//
-//type EbtableRule struct {
-//	MatchDstIPNet string
-//	TargetDstMAC  string
-//}
 
 func New(sm subnet.Manager, extIface *backend.ExternalInterface) (backend.Backend, error) {
 	backend := &YhVpcBackend{
@@ -87,17 +81,9 @@ func (be *YhVpcBackend) RegisterNetwork(ctx context.Context, wg sync.WaitGroup, 
 	}
 
 	// create bridge cni0 if necessary
-	br, err := ensureBridge(brName, be.extIface.Iface.MTU)
+	br, err := ensureBridge(defaultBridgeName, be.extIface.Iface.MTU)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create bridge %q: %v", brName, err)
-	}
-
-	brIpNet := ip.IP4Net{
-		IP:        lease.Subnet.IP + 1,
-		PrefixLen: lease.Subnet.PrefixLen,
-	}
-	if _, err = setBridgeIP(br, &brIpNet); err != nil {
-		return nil, fmt.Errorf("failed to set ip %v on bridge %v", lease.Subnet.IP.String(), brName)
+		return nil, fmt.Errorf("failed to create bridge %q: %v", defaultBridgeName, err)
 	}
 
 	// add physical Interface into CNI bridge
@@ -105,16 +91,6 @@ func (be *YhVpcBackend) RegisterNetwork(ctx context.Context, wg sync.WaitGroup, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to add physical interface(%s) to CNI bridge. %v", be.extIface.Iface.Name, err)
 	}
-
-	//// set Ebtable rules
-	//rule := EbtableRule{
-	//	MatchDstIPNet: "10.96.0.0/12",           // cluster-ip-range
-	//	TargetDstMAC:  br.HardwareAddr.String(), // bridge mac addr
-	//}
-	//err = setEbtableRules(&rule)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to set ebtables rules for CNI bridge. err: %v", err)
-	//}
 
 	return newNetwork(be.subnetMgr, be.extIface, ip.IP4Net{}, lease)
 }
@@ -241,20 +217,3 @@ func addExtIface2Bridge(br *netlink.Bridge, ifName string) error {
 
 	return nil
 }
-
-//
-//func setEbtableRules(rule *EbtableRule) error {
-//	buf := &bytes.Buffer{}
-//	// ebtables -t broute -A BROUTING -p IPv4 --ip-destination 10.96.0.0/12 -j dnat --to-destination 20:90:6f:57:05:b0
-//	buf.WriteString(fmt.Sprintf("*broute\n:BROUTING ACCEPT\n"))
-//	buf.WriteString(fmt.Sprintf("-A BROUTING -p IPv4 --ip-dst %s -j dnat --to-dst %s --dnat-target ACCEPT\n", rule.MatchDstIPNet, rule.TargetDstMAC))
-//	cmd := exec.Command("ebtables-restore")
-//	cmd.Stderr = os.Stderr
-//	cmd.Stdout = os.Stdout
-//	cmd.Stdin = buf
-//	if err := cmd.Run(); err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}

@@ -525,30 +525,19 @@ func LookupExtIface(ifname string, ifregex string) (*backend.ExternalInterface, 
 		}
 	} else {
 		// for yh-vpc
-		if err := readLine(EnvFile, getEnv); err == nil {
-			if iface, err = getExtIfaceName(); err != nil {
-				log.Errorf("failed to get external interface from /etc/sysconfig/cni: %s", err)
-
-				// get default gw interface
-				log.Info("Determining IP address of default interface")
-				if iface, err = ip.GetDefaultGatewayIface(); err != nil {
-					return nil, fmt.Errorf("failed to get default interface: %s", err)
-				}
-			}
-			ifaceAddr = net.ParseIP("0.0.0.0")
-		} else {
-			// get default gw interface
-			log.Info("Determining IP address of default interface")
-			if iface, err = ip.GetDefaultGatewayIface(); err != nil {
-				return nil, fmt.Errorf("failed to get default interface: %s", err)
-			}
+		if err := readLine(EnvFile, getEnv); err != nil {
+			return nil, fmt.Errorf("failed to read CNI interface in /etc/sysconfig/cni  err: %s", err)
+		}
+		if iface, err = getExtIfaceName(); err != nil {
+			log.Errorf("failed to get external interface from /etc/sysconfig/cni: %s", err)
+			return nil, fmt.Errorf("failed to get default interface: %s", err)
 		}
 	}
 
 	if ifaceAddr == nil {
 		ifaceAddr, err = ip.GetIfaceIP4Addr(iface)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find IPv4 address for interface %s", iface.Name)
+			ifaceAddr = net.ParseIP("0.0.0.0")
 		}
 	}
 

@@ -5,7 +5,7 @@ REGISTRY?=registry.yonghui.cn/ycloud/flannel
 QEMU_VERSION=v3.0.0
 
 # Default tag and architecture. Can be overridden
-TAG?=v0.1
+TAG?=v0.2
 ARCH?=amd64
 # Only enable CGO (and build the UDP backend) on AMD64
 ifeq ($(ARCH),amd64)
@@ -35,6 +35,7 @@ clean:
 	rm -f dist/*.docker
 	rm -f dist/*.tar.gz
 	rm -f dist/qemu-*
+	rm -f dist/yonghui
 
 dist/flanneld: $(shell find . -type f  -name '*.go')
 	go build -o dist/flanneld \
