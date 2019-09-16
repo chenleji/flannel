@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/coreos/flannel/pkg/ip"
@@ -48,8 +49,12 @@ var (
 )
 
 const (
-	resyncPeriod              = 5 * time.Minute
-	nodeControllerSyncTimeout = 10 * time.Minute
+	resyncPeriod               = 5 * time.Minute
+	nodeControllerSyncTimeout  = 10 * time.Minute
+	defaultClusterIpRange      = "10.96.0.0/12"
+	kubeSystemNamespace        = "kube-system"
+	kebeApiServerContainerName = "kube-apiserver"
+	serviceClusterIpRangeKey   = "--service-cluster-ip-range="
 )
 
 type kubeSubnetManager struct {
@@ -60,6 +65,46 @@ type kubeSubnetManager struct {
 	nodeController cache.Controller
 	subnetConf     *subnet.Config
 	events         chan subnet.Event
+}
+
+func GetClusterIpRange(apiUrl, kubeconfig string) (string, error) {
+	var cfg *rest.Config
+	var err error
+	// Try to build kubernetes config from a master url or a kubeconfig filepath. If neither masterUrl
+	// or kubeconfigPath are passed in we fall back to inClusterConfig. If inClusterConfig fails,
+	// we fallback to the default config.
+	cfg, err = clientcmd.BuildConfigFromFlags(apiUrl, kubeconfig)
+	if err != nil {
+		return "", fmt.Errorf("fail to create kubernetes config: %v", err)
+	}
+
+	c, err := clientset.NewForConfig(cfg)
+	if err != nil {
+		return "", fmt.Errorf("unable to initialize client: %v", err)
+	}
+
+	pl, err := c.CoreV1().Pods(kubeSystemNamespace).List(
+		metav1.ListOptions{
+			LabelSelector: "component=kube-apiserver",
+		})
+	if err != nil {
+		return "", fmt.Errorf("get api-server pod err: %v", err)
+	}
+
+	for _, p := range pl.Items {
+		for i, c := range p.Spec.Containers {
+			if c.Name == kebeApiServerContainerName {
+				apiServer := p.Spec.Containers[i]
+				for _, v := range apiServer.Command {
+					if strings.HasPrefix(v, serviceClusterIpRangeKey) {
+						return strings.TrimPrefix(v, serviceClusterIpRangeKey), nil
+					}
+				}
+			}
+		}
+	}
+
+	return defaultClusterIpRange, nil
 }
 
 func NewSubnetManager(apiUrl, kubeconfig, prefix, netConfPath string) (subnet.Manager, error) {

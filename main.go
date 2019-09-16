@@ -579,6 +579,12 @@ func WriteSubnetFile(path string, nw ip.IP4Net, ipMasq bool, bn backend.Network)
 		return err
 	}
 
+	// cluster ip range
+	clusterIpRange, err := kube.GetClusterIpRange(opts.kubeApiUrl, opts.kubeConfigFile)
+	if err != nil {
+		return err
+	}
+
 	// Write out the first usable IP by incrementing
 	// sn.IP by one
 	sn := bn.Lease().Subnet
@@ -588,6 +594,7 @@ func WriteSubnetFile(path string, nw ip.IP4Net, ipMasq bool, bn backend.Network)
 	fmt.Fprintf(f, "FLANNEL_SUBNET=%s\n", sn)
 	fmt.Fprintf(f, "FLANNEL_MTU=%d\n", bn.MTU())
 	_, err = fmt.Fprintf(f, "FLANNEL_IPMASQ=%v\n", ipMasq)
+	fmt.Fprintf(f, "FLANNEL_CLUSTERIPRANGE=%s\n", clusterIpRange)
 	f.Close()
 	if err != nil {
 		return err
@@ -658,14 +665,13 @@ func readLine(fileName string, handler func(string)) error {
 	}
 }
 
-func getExtIfaceName()(*net.Interface, error){
+func getExtIfaceName() (*net.Interface, error) {
 	if ifName, ok := envVar[EnvExtIfaceKey]; ok {
 		iface, err := net.InterfaceByName(ifName)
 		if err != nil {
-			return nil, fmt.Errorf("cant't find ext interface! err: %v",  err.Error())
+			return nil, fmt.Errorf("cant't find ext interface! err: %v", err.Error())
 		}
 		return iface, nil
 	}
 	return nil, fmt.Errorf("%s", "ext interface is Null!")
 }
-
